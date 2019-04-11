@@ -17,11 +17,27 @@ apply_patch:
 	(cd vendor/github.com/tendermint/iavl       && patch -p1 -t < ../../../../patches/fixes/iavl-cleveldb-close-batch.patch); exit 0
 	(cd vendor/github.com/cosmos/cosmos-sdk     && patch -p1 -t < ../../../../patches/fixes/cosmos-cleveldb-close-batch.patch); exit 0
 
+apply_fullnode_patch:
+	dep ensure
+	cp ./patches/general/constructors ./vendor/github.com/cosmos/cosmos-sdk/server/constructors.go
+	(cd vendor/github.com/tendermint/tendermint && patch -p1 -t < ../../../../patches/fixes/tendermint-cleveldb-close-batch.patch); exit 0
+	(cd vendor/github.com/tendermint/tendermint && patch -p1 -t < ../../../../patches/fullnode/tendermint-cached-txindexer.patch); exit 0
+	(cd vendor/github.com/tendermint/iavl       && patch -p1 -t < ../../../../patches/fixes/iavl-cleveldb-close-batch.patch); exit 0
+	(cd vendor/github.com/cosmos/cosmos-sdk     && patch -p1 -t < ../../../../patches/fixes/cosmos-cleveldb-close-batch.patch); exit 0
+
 build: get_vendor_deps apply_patch
 	CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go build -ldflags $(LD_FLAGS) -tags $(GO_TAGS) -o bin/linod   cmd/lino/main.go
 	CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go build -ldflags $(LD_FLAGS) -tags $(GO_TAGS) -o bin/linocli cmd/linocli/main.go
 
+build_fullnode: get_vendor_deps apply_fullnode_patch
+	CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go build -ldflags $(LD_FLAGS) -tags $(GO_TAGS) -o bin/linod   cmd/lino/main.go
+	CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go build -ldflags $(LD_FLAGS) -tags $(GO_TAGS) -o bin/linocli cmd/linocli/main.go
+
 install: get_vendor_deps apply_patch
+	cd cmd/lino    && CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go install -ldflags $(LD_FLAGS) -tags $(GO_TAGS)
+	cd cmd/linocli && CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go install -ldflags $(LD_FLAGS) -tags $(GO_TAGS)
+
+install_fullnode: get_vendor_deps apply_fullnode_patch
 	cd cmd/lino    && CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go install -ldflags $(LD_FLAGS) -tags $(GO_TAGS)
 	cd cmd/linocli && CGO_LDFLAGS=$(CGO_LDFLAGS) CGO_ENABLED=1 go install -ldflags $(LD_FLAGS) -tags $(GO_TAGS)
 
